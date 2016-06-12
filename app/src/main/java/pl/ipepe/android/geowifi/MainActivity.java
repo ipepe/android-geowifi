@@ -13,7 +13,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.activeandroid.ActiveAndroid;
+
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -22,7 +25,7 @@ public class MainActivity extends ActivityWithSettings {
     ListView list_view;
     TextView text_view;
     WifiManager wifi_manager;
-    String wifis[];
+    ArrayList<String> wifis;
     WifiScanReceiver wifi_scan_reciever;
 
     @Override
@@ -57,14 +60,20 @@ public class MainActivity extends ActivityWithSettings {
             List<ScanResult> wifiScanList = wifi_manager.getScanResults();
             text_view.setText(String.format("Last scan time: %s", new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime())));
 
+            wifis = new ArrayList<String>();
             if (wifiScanList.size() == 0){
-                wifis = new String[1];
-                wifis[0] = "Brak sieci : (";
+                wifis.add("Brak sieci : (");
             }else {
-                wifis = new String[wifiScanList.size()];
-                for (int i = 0; i < wifiScanList.size(); i++) {
-                    ScanResult wifi = (wifiScanList.get(i));
-                    wifis[i] = String.format("%d %s %s", wifi.level, wifi.SSID, wifi.BSSID);
+                ActiveAndroid.beginTransaction();
+                try {
+                    for(ScanResult wifi : wifiScanList) {
+                        WifiObservation wifiObservation = new WifiObservation(wifi);
+                        wifis.add(wifiObservation.toString());
+                        wifiObservation.save();
+                    }
+                    ActiveAndroid.setTransactionSuccessful();
+                } finally {
+                    ActiveAndroid.endTransaction();
                 }
             }
             list_view.setAdapter(new ArrayAdapter<String>(getApplicationContext(),R.layout.row,wifis));
