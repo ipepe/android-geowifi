@@ -35,7 +35,7 @@ public class MainActivity extends ActivityWithSettings {
         list_view =(ListView)findViewById(R.id.listView);
         text_view =(TextView)findViewById(R.id.textView);
 
-        wifi_manager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+        wifi_manager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         wifi_scan_reciever = new WifiScanReceiver();
         startWifiScan();
 
