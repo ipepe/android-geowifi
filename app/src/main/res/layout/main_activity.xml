@@ -14,16 +14,40 @@
     - Lista sieci Wifi
     -->
 
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="@string/gps_scan_text"
+            android:id="@+id/lastGpsPositionTextView"
+            android:layout_gravity="center_horizontal" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="@string/wifi_scan_text"
+            android:id="@+id/lastScanTimeTextView"
+            android:layout_gravity="center_horizontal" />
+    </LinearLayout>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="Last scan time: unknown"
-        android:id="@+id/textView"
+        android:text="@string/wifi_observations_count_text"
+        android:id="@+id/wifiObservationsCountTextView"
         android:layout_gravity="center_horizontal" />
 
-    <ListView android:id="@+id/listView"
+    <ListView android:id="@+id/currentWifisListView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="10dp" />

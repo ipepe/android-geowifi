@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">GeoWifi</string>
+    <string name="app_name">Geo WiFi</string>
+    <string name="wifi_scan_text">Last WiFi scan</string>
+    <string name="gps_scan_text">Last GPS location</string>
+    <string name="wifi_observations_count_text">Wifi Observations Count</string>
+    <string name="export_wifis_to_server_text">Export data to: geowifi.ipepe.pl</string>
 </resources>

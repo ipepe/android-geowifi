@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">GeoWiFi</string>
+    <string name="wifi_scan_text">Ostatni skan WIFI</string>
+    <string name="gps_scan_text">Ostatnia pozycja GPS</string>
+    <string name="wifi_observations_count_text">Ilosć obserwacji sieci WIFI</string>
+    <string name="export_wifis_to_server_text">Eksport danych do geowifi.ipepe.pl</string>
+</resources>
