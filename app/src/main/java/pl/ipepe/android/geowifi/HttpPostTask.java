@@ -22,27 +22,33 @@ import java.util.UUID;
  * Created by Patryk on 31.08.2016.
  */
 public class HttpPostTask extends AsyncTask<Object, Void, Integer> {
+    private final String deviceId;
     private List<WifiObservation> wifiObservationList;
     private Context context;
     private String url;
-    public HttpPostTask(String url, Context context){
+    public HttpPostTask(String url, Context context, String deviceId){
         super();
         this.url = url;
+        this.deviceId = deviceId;
         this.context = context;
     }
     protected Integer doInBackground(Object... params) {
         JSONArray array = new JSONArray();
-        wifiObservationList = new Select().from(WifiObservation.class).where("is_exported = ?", false).execute();
+        wifiObservationList = new Select().
+                from(WifiObservation.class).
+                where("is_exported = ?", false).
+                limit(10000).
+                execute();
         for (WifiObservation wo: wifiObservationList) {
             array.put(wo.toJson());
         }
         JSONObject exportedJson = new JSONObject();
         try{
             exportedJson.
-                    accumulate("wifi_observations_receiver", new JSONObject().
+                    accumulate("wifi_observation_receiver", new JSONObject().
                             accumulate("wifi_observations", array).
                             accumulate("meta", new JSONObject().
-                                    accumulate("device_id", UUID.randomUUID().toString())));
+                                    accumulate("source", "android_"+this.deviceId)));
         }catch(JSONException ex){
             return null;
         }
@@ -51,7 +57,7 @@ public class HttpPostTask extends AsyncTask<Object, Void, Integer> {
             return HttpRequest.
                     post(this.url).
                     contentType(HttpRequest.CONTENT_TYPE_JSON).
-                    send(array.toString()).
+                    send(exportedJson.toString()).
                     code();
         } catch (HttpRequest.HttpRequestException exception) {
             return 0;
@@ -59,8 +65,8 @@ public class HttpPostTask extends AsyncTask<Object, Void, Integer> {
     }
 
     protected void onPostExecute(Integer http_code) {
-        if(http_code == 200){
-            Toast.makeText(context, "Exported "+wifiObservationList.size()+" WIFIs successfuly", Toast.LENGTH_SHORT).show();
+        if(http_code == 204){
+            Toast.makeText(context, String.format(context.getString(R.string.export_successful), wifiObservationList.size()), Toast.LENGTH_LONG).show();
             ActiveAndroid.beginTransaction();
             try {
                 for (WifiObservation wifiObservation: wifiObservationList) {
@@ -72,7 +78,7 @@ public class HttpPostTask extends AsyncTask<Object, Void, Integer> {
                 ActiveAndroid.endTransaction();
             }
         } else {
-            Toast.makeText(context, "Export unsuccessful with code: " + http_code.toString(), Toast.LENGTH_LONG).show();
+            Toast.makeText(context, String.format(context.getString(R.string.export_unsuccessful), http_code), Toast.LENGTH_LONG).show();
         }
         wifiObservationList=null;
         Log.i("HttpPostResult",http_code.toString());

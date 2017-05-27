@@ -2,6 +2,12 @@
     <string name="app_name">GeoWiFi</string>
     <string name="wifi_scan_text">Ostatni skan WIFI</string>
     <string name="gps_scan_text">Ostatnia pozycja GPS</string>
-    <string name="wifi_observations_count_text">Ilosć obserwacji sieci WIFI</string>
+    <string name="wifi_observations_count_text">Obserwacji WIFI w lokalnej bazie</string>
     <string name="export_wifis_to_server_text">Eksport danych do geowifi.ipepe.pl</string>
+    <string name="no_networks">Brak sieci WIFI w zasięgu</string>
+    <string name="export_unsuccessful">Eksport zakonczyl sie bledem: %d</string>
+    <string name="export_successful">Wyeksportowano %d obserwacji</string>
+    <string name="reset_exported_flag_text">Zresetuj oznaczenie wykeksportowanych obserwacji</string>
+    <string name="clear_observation_database_text">Usun bazę danych obserwacji</string>
+    <string name="success_text">Udalo sie</string>
 </resources>

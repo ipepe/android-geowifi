@@ -3,19 +3,20 @@ package pl.ipepe.android.geowifi;
 import android.content.Context;
 import android.location.Location;
 import android.net.wifi.ScanResult;
+import android.widget.Toast;
 
 import com.activeandroid.Model;
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
+import com.activeandroid.query.Delete;
 import com.activeandroid.query.Select;
+import com.activeandroid.query.Update;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Date;
 import java.util.List;
-import android.provider.Settings.Secure;
 
 @Table(name = "wifi_observations")
 public class WifiObservation extends Model {
@@ -32,8 +33,8 @@ public class WifiObservation extends Model {
     @Column(name = "capabilities")
     public String capabilities;
 
-    @Column(name = "seen_at")
-    public Date seen_at;
+    @Column(name = "observed_at")
+    public Date observed_at;
 
     @Column(name = "channel_frequency")
     public int channel_frequency;
@@ -44,11 +45,11 @@ public class WifiObservation extends Model {
     @Column(name = "longitude")
     public double longitude;
 
-    @Column(name = "gps_updated_at")
-    public Date gps_updated_at;
+    @Column(name = "geolocated_at")
+    public Date geolocated_at;
 
-    @Column(name = "gps_accurancy")
-    public float gps_accurancy;
+    @Column(name = "geolocation_accuracy")
+    public float geolocation_accuracy;
 
     @Column(name = "is_exported")
     public boolean is_exported;
@@ -65,12 +66,12 @@ public class WifiObservation extends Model {
         this.capabilities = scanResult.capabilities;
         this.channel_frequency = scanResult.frequency;
 
-        this.seen_at = new Date();
+        this.observed_at = new Date();
 
         this.latitude = location.getLatitude();
         this.longitude = location.getLongitude();
-        this.gps_updated_at = new Date(location.getTime());
-        this.gps_accurancy = location.getAccuracy();
+        this.geolocated_at = new Date(location.getTime());
+        this.geolocation_accuracy = location.getAccuracy();
 
         this.is_exported = false;
     }
@@ -84,11 +85,11 @@ public class WifiObservation extends Model {
                     .accumulate("signal_level", this.signal_level)
                     .accumulate("capabilities",this.capabilities)
                     .accumulate("channel_frequency", this.channel_frequency)
-                    .accumulate("seen_at", this.seen_at)
+                    .accumulate("observed_at", this.observed_at)
                     .accumulate("latitude",this.latitude)
                     .accumulate("longitude", this.longitude)
-                    .accumulate("gps_updated_at", this.gps_updated_at)
-                    .accumulate("gps_accurancy", this.gps_accurancy);
+                    .accumulate("geolocated_at", this.geolocated_at)
+                    .accumulate("geolocation_accuracy", this.geolocation_accuracy);
         }catch(JSONException ex){
             return null;
         }
@@ -102,10 +103,20 @@ public class WifiObservation extends Model {
     public static int count(){
         return new Select().from(WifiObservation.class).execute().size();
     }
-    public static void markAsExported(List<WifiObservation> wifi_observation_list){
-
+    public static void exportToServer(Context context, String url, String deviceId) {
+        new HttpPostTask(url, context, deviceId).execute();
     }
-    public static void exportToServer(Context context, String url) {
-        new HttpPostTask(url, context).execute();
+
+    public static void resetIsExportedFlag(Context context) {
+        new Update(WifiObservation.class).
+                set("is_exported = ?", true).
+                where("is_exported = ?", true).
+                execute();
+        Toast.makeText(context, context.getString(R.string.success_text), Toast.LENGTH_LONG).show();
+    }
+
+    public static void destroyDatabase(Context context) {
+        new Delete().from(WifiObservation.class).execute();
+        Toast.makeText(context, context.getString(R.string.success_text), Toast.LENGTH_LONG).show();
     }
 }

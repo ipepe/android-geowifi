@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/export" android:title="@string/export_wifis_to_server_text" />
+    <item android:id="@+id/reset_exported_flag" android:title="@string/reset_exported_flag_text" />
+    <item android:id="@+id/destroy_observation_database" android:title="@string/clear_observation_database_text" />
 </menu>

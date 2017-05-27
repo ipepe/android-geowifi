@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import io.nlopez.smartlocation.OnLocationUpdatedListener;
 import io.nlopez.smartlocation.SmartLocation;
@@ -46,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     GpsLocationListener gps_location_listener;
     Location last_location = null;
     Date last_location_time = null;
+    public static final String preferenceUniqueIdKey = "deviceid";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +65,18 @@ public class MainActivity extends AppCompatActivity {
         startWifiScan();
         startGpsListener();
         updateWifiObservationsCount();
+    }
+
+    public String getUniqueDeviceId(){
+        SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+        String device_id = sharedPref.getString(preferenceUniqueIdKey, null);
+        if(device_id == null){
+            SharedPreferences.Editor editor = sharedPref.edit();
+            device_id = UUID.randomUUID().toString();
+            editor.putString(preferenceUniqueIdKey, device_id);
+            editor.apply();
+        }
+        return device_id;
     }
 
     public void startWifiScan() {
@@ -98,23 +113,29 @@ public class MainActivity extends AppCompatActivity {
             case R.id.export:
                 AlertDialog.Builder alert = new AlertDialog.Builder(this);
                 final EditText editTextView = new EditText(this);
-                if (BuildConfig.DEBUG) {
-                    editTextView.setText("http://192.168.1.108:3000/api/v1/wifi_observation_receiver");
-                }else{
-                    editTextView.setText("https://geowifi.ipepe.pl/api/v1/wifi_observation_receiver");
-                }
+//                if (BuildConfig.DEBUG) {
+//                    editTextView.setText("http://192.168.1.108:3000/api/v1/wifi_observation_receiver");
+//                }else{
+                    editTextView.setText("https://geowifi.science/api/v1/wifi_observation_receiver");
+//                }
                 alert.setCancelable(true);
                 alert.setTitle("Cofirm server address:");
                 alert.setView(editTextView);
-                alert.setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+                alert.setCancelable(true);
+                alert.setPositiveButton("Send my observations database", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        WifiObservation.exportToServer(getApplicationContext(), editTextView.getText().toString());
+                        WifiObservation.exportToServer(getApplicationContext(), editTextView.getText().toString(), getUniqueDeviceId());
                     }
                 });
 
 
                 alert.show();
                 return true;
+            case R.id.reset_exported_flag:
+                WifiObservation.resetIsExportedFlag(getApplicationContext());
+            case R.id.destroy_observation_database:
+                WifiObservation.destroyDatabase(getApplicationContext());
+                updateWifiObservationsCount();
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -129,7 +150,8 @@ public class MainActivity extends AppCompatActivity {
                             getString(R.string.gps_scan_text),
                             location.getLatitude(),
                             location.getLongitude(),
-                            new SimpleDateFormat("HH:mm:ss").format(new Date(location.getTime()))));
+                            new SimpleDateFormat("HH:mm:ss").format(new Date(location.getTime())))
+            );
         }
     }
 
@@ -144,10 +166,15 @@ public class MainActivity extends AppCompatActivity {
                 last_scan_time_text_view.setText(String.format("%s:\n%s",
                         getString(R.string.wifi_scan_text),
                         new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime())));
+                for (ScanResult wifi : wifiScanList) {
+                    if( wifi.SSID.contains("_nomap") || wifi.SSID.contains("_optout") ){
+                        wifiScanList.remove(wifi);
+                    }
+                }
 
                 wifis = new ArrayList<String>();
                 if (wifiScanList.size() == 0) {
-                    wifis.add("Brak sieci : (");
+                    wifis.add(getString(R.string.no_networks));
                 } else {
                     ActiveAndroid.beginTransaction();
                     try {
@@ -163,8 +190,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 current_wifis_list_view.setAdapter(new ArrayAdapter<String>(getApplicationContext(), R.layout.row, wifis));
                 wifi_manager.startScan();
-            }else{
-                Toast.makeText(context, "Canno't import, because location is too old", Toast.LENGTH_SHORT).show();
             }
             updateWifiObservationsCount();
         }
