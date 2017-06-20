@@ -37,7 +37,7 @@ public class HttpPostTask extends AsyncTask<Object, Void, Integer> {
         wifiObservationList = new Select().
                 from(WifiObservation.class).
                 where("is_exported = ?", false).
-                limit(10000).
+                limit(3000).
                 execute();
         for (WifiObservation wo: wifiObservationList) {
             array.put(wo.toJson());
