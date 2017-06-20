@@ -161,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
 
     private class WifiScanReceiver extends BroadcastReceiver {
         public void onReceive(Context context, Intent intent) {
+            wifi_manager.startScan();
             if(last_location != null && ( (1000*10) > Calendar.getInstance().getTime().getTime() - last_location.getTime())){
                 List<ScanResult> wifiScanList = wifi_manager.getScanResults();
                 last_scan_time_text_view.setText(String.format("%s:\n%s",
@@ -189,7 +190,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 current_wifis_list_view.setAdapter(new ArrayAdapter<String>(getApplicationContext(), R.layout.row, wifis));
-                wifi_manager.startScan();
             }
             updateWifiObservationsCount();
         }
