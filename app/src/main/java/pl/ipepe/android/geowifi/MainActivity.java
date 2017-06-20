@@ -61,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
         wifi_manager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         wifi_scan_reciever = new WifiScanReceiver();
+        registerReceiver(wifi_scan_reciever, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         gps_location_listener = new GpsLocationListener();
         startWifiScan();
         startGpsListener();
@@ -157,7 +158,8 @@ public class MainActivity extends AppCompatActivity {
 
     private class WifiScanReceiver extends BroadcastReceiver {
         public void onReceive(Context context, Intent intent) {
-            if( last_location != null && ( (1000*10) > Calendar.getInstance().getTime().getTime() - last_location.getTime())){
+            wifi_manager.startScan();
+            if(last_location != null && ( (1000*10) > Calendar.getInstance().getTime().getTime() - last_location.getTime())){
                 List<ScanResult> wifiScanList = wifi_manager.getScanResults();
                 for (ScanResult wifi : wifiScanList) {
                     if( wifi.SSID.contains("_nomap") || wifi.SSID.contains("_optout") ){
