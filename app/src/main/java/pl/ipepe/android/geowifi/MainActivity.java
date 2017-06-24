@@ -14,6 +14,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.WindowManager;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -21,6 +24,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.activeandroid.ActiveAndroid;
+import com.activeandroid.query.Select;
+
+import org.json.JSONArray;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -35,11 +41,6 @@ import io.nlopez.smartlocation.location.config.LocationParams;
 
 public class MainActivity extends AppCompatActivity {
 
-//    elementy gui
-    ListView current_wifis_list_view;
-    TextView last_scan_time_text_view;
-    TextView last_gps_position_text_view;
-    TextView wifi_observations_count_text_view;
 //    skanowanie wifi
     WifiManager wifi_manager;
     ArrayList<String> wifis;
@@ -47,17 +48,18 @@ public class MainActivity extends AppCompatActivity {
 //    lokalizowanie
     GpsLocationListener gps_location_listener;
     Location last_location = null;
-    Date last_location_time = null;
+    WebView webView;
     public static final String preferenceUniqueIdKey = "deviceid";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main_activity);
-        current_wifis_list_view = (ListView) findViewById(R.id.currentWifisListView);
-        last_scan_time_text_view = (TextView) findViewById(R.id.lastScanTimeTextView);
-        last_gps_position_text_view = (TextView) findViewById(R.id.lastGpsPositionTextView);
-        wifi_observations_count_text_view = (TextView) findViewById(R.id.wifiObservationsCountTextView);
+        webView = new WebView(this);
+        setContentView(webView);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webView.loadUrl("file:///android_asset/www/map.html");
 
         wifi_manager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         wifi_scan_reciever = new WifiScanReceiver();
@@ -65,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
         gps_location_listener = new GpsLocationListener();
         startWifiScan();
         startGpsListener();
-        updateWifiObservationsCount();
     }
 
     public String getUniqueDeviceId(){
@@ -107,6 +108,14 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    public void runJavascript(String code){
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            webView.evaluateJavascript(code, null);
+        } else {
+            webView.loadUrl("javascript:("+code+");");
+        }
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
@@ -136,7 +145,6 @@ public class MainActivity extends AppCompatActivity {
                 WifiObservation.resetIsExportedFlag(getApplicationContext());
             case R.id.destroy_observation_database:
                 WifiObservation.destroyDatabase(getApplicationContext());
-                updateWifiObservationsCount();
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -146,18 +154,8 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onLocationUpdated(Location location) {
             last_location = location;
-            last_gps_position_text_view.setText(
-                    String.format("%s:\n%4.3f %4.3f\n%s",
-                            getString(R.string.gps_scan_text),
-                            location.getLatitude(),
-                            location.getLongitude(),
-                            new SimpleDateFormat("HH:mm:ss").format(new Date(location.getTime())))
-            );
+            runJavascript("updateGpsMarkerLocation("+location.getLatitude()+","+location.getLongitude()+")");
         }
-    }
-
-    private void updateWifiObservationsCount(){
-        wifi_observations_count_text_view.setText(String.format("%s: %d", getString(R.string.wifi_observations_count_text), WifiObservation.count()));
     }
 
     private class WifiScanReceiver extends BroadcastReceiver {
@@ -165,16 +163,13 @@ public class MainActivity extends AppCompatActivity {
             wifi_manager.startScan();
             if(last_location != null && ( (1000*10) > Calendar.getInstance().getTime().getTime() - last_location.getTime())){
                 List<ScanResult> wifiScanList = wifi_manager.getScanResults();
-                last_scan_time_text_view.setText(String.format("%s:\n%s",
-                        getString(R.string.wifi_scan_text),
-                        new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime())));
                 for (ScanResult wifi : wifiScanList) {
                     if( wifi.SSID.contains("_nomap") || wifi.SSID.contains("_optout") ){
                         wifiScanList.remove(wifi);
                     }
                 }
 
-                wifis = new ArrayList<String>();
+                JSONArray array = new JSONArray();
                 if (wifiScanList.size() == 0) {
                     wifis.add(getString(R.string.no_networks));
                 } else {
@@ -182,17 +177,17 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         for (ScanResult wifi : wifiScanList) {
                             WifiObservation wifiObservation = new WifiObservation(wifi, last_location);
-                            wifis.add(wifiObservation.toString());
+                            array.put(wifiObservation.toJson());
                             wifiObservation.save();
                         }
                         ActiveAndroid.setTransactionSuccessful();
                     } finally {
                         ActiveAndroid.endTransaction();
                     }
+                    runJavascript("geolocateByWifis("+array.toString()+")");
                 }
-                current_wifis_list_view.setAdapter(new ArrayAdapter<String>(getApplicationContext(), R.layout.row, wifis));
+                wifi_manager.startScan();
             }
-            updateWifiObservationsCount();
         }
     }
 }
