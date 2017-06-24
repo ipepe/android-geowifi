@@ -3,16 +3,6 @@ L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://cartodb.com/attributions">CartoDB</a>',
 }).addTo(window.map);
 
-function distance(lat1, lon1, lat2, lon2) {
-  var p = 0.017453292519943295;    // Math.PI / 180
-  var c = Math.cos;
-  var a = 0.5 - c((lat2 - lat1) * p)/2 +
-          c(lat1 * p) * c(lat2 * p) *
-          (1 - c((lon2 - lon1) * p))/2;
-
-  return 12742000 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
-}
-
 window.googleTimes = 0;
 window.googleAccuracy = 0;
 window.googleMeasuredAccuracy = 0;
@@ -67,11 +57,11 @@ window.geolocateByWifis = function(wifis){
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         success: function(data){
-            if(data){
+            if(data && data.location.lat && data.location.lng){
                 geowifiTimes += 1;
                 window.geowifiAccuracy += parseFloat(data.accuracy || 0)
-                window.geowifiMeasuredAccuracy += distance(gpsMarker.getLatLng().lat, gpsMarker.getLatLng().lng, data.location.lat, data.location.lng)
                 window.wifiMarker.setLatLng([data.location.lat, data.location.lng]);
+                window.geowifiMeasuredAccuracy += window.wifiMarker.getLatLng().distanceTo(window.gpsMarker.getLatLng())
                 window.fitMarkersIntoScreen();
             }
         },
@@ -83,11 +73,11 @@ window.geolocateByWifis = function(wifis){
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         success: function(data){
-            if(data){
+            if(data && data.location.lat && data.location.lng){
                 googleTimes += 1;
-                window.googleMeasuredAccuracy += distance(gpsMarker.getLatLng().lat, gpsMarker.getLatLng().lng, data.location.lat, data.location.lng)
                 window.googleAccuracy += parseFloat(data.accuracy || 0)
                 window.googleWifiMarker.setLatLng([data.location.lat, data.location.lng]);
+                window.googleMeasuredAccuracy += googleWifiMarker.getLatLng().distanceTo(gpsMarker.getLatLng())
                 window.fitMarkersIntoScreen();
             }
         },
@@ -107,12 +97,12 @@ info.update = function (props) {
     this._div.innerHTML += '<br>Google: ' + (  (((new Date()) - timeStart)/1000) / googleTimes ).toFixed(3) + ' s';
 
     this._div.innerHTML += '<br><strong>Średnia deklarowana precyzja:</strong>';
-    this._div.innerHTML += '<br>GeoWifi: ' + parseInt(  geowifiAccuracy / geowifiTimes ) + ' m';
-    this._div.innerHTML += '<br>Google: ' + parseInt(  googleAccuracy / googleTimes ) + ' m';
+    this._div.innerHTML += '<br>GeoWifi: ' + (  geowifiAccuracy / parseInt( geowifiTimes ) ).toFixed(3) + ' m';
+    this._div.innerHTML += '<br>Google: ' + (  googleAccuracy / googleTimes ).toFixed(3) + ' m';
 
     this._div.innerHTML += '<br><strong>Średnia zmierzona precyzja:</strong>';
-    this._div.innerHTML += '<br>GeoWifi: ' + parseInt(  geowifiMeasuredAccuracy / geowifiTimes ) + ' m';
-    this._div.innerHTML += '<br>Google: ' + parseInt(  googleMeasuredAccuracy / googleTimes ) + ' m';
+    this._div.innerHTML += '<br>GeoWifi: ' + (  geowifiMeasuredAccuracy / geowifiTimes ).toFixed(3) + ' m';
+    this._div.innerHTML += '<br>Google: ' + (  googleMeasuredAccuracy / googleTimes ).toFixed(3) + ' m';
 
     this._div.innerHTML += '<br><strong>Liczba geolokacji:</strong>';
     this._div.innerHTML += '<br>GeoWifi: ' + parseInt( geowifiTimes );
