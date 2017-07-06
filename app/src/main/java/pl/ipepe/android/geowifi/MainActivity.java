@@ -14,6 +14,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -47,13 +48,13 @@ public class MainActivity extends AppCompatActivity {
 //    lokalizowanie
     GpsLocationListener gps_location_listener;
     Location last_location = null;
-    Date last_location_time = null;
     public static final String preferenceUniqueIdKey = "deviceid";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         current_wifis_list_view = (ListView) findViewById(R.id.currentWifisListView);
         last_scan_time_text_view = (TextView) findViewById(R.id.lastScanTimeTextView);
         last_gps_position_text_view = (TextView) findViewById(R.id.lastGpsPositionTextView);
@@ -61,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
 
         wifi_manager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         wifi_scan_reciever = new WifiScanReceiver();
+        registerReceiver(wifi_scan_reciever, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         gps_location_listener = new GpsLocationListener();
         startWifiScan();
         startGpsListener();
@@ -161,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
 
     private class WifiScanReceiver extends BroadcastReceiver {
         public void onReceive(Context context, Intent intent) {
+            wifi_manager.startScan();
             if(last_location != null && ( (1000*10) > Calendar.getInstance().getTime().getTime() - last_location.getTime())){
                 List<ScanResult> wifiScanList = wifi_manager.getScanResults();
                 last_scan_time_text_view.setText(String.format("%s:\n%s",
@@ -189,7 +192,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 current_wifis_list_view.setAdapter(new ArrayAdapter<String>(getApplicationContext(), R.layout.row, wifis));
-                wifi_manager.startScan();
             }
             updateWifiObservationsCount();
         }
